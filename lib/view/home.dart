@@ -1,5 +1,6 @@
 import 'package:ambar_living/controller/repo_controller.dart';
 import 'package:ambar_living/model/repo.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatefulWidget {
@@ -11,12 +12,13 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   RepoController repoController = RepoController();
-  List<Repo> repositories = [];
 
-  @override
-  void initState() {
-    super.initState();
-    //repoController.getRepositories().then((value) => repositories = value);
+  launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Não foi possível abrir $url';
+    }
   }
 
   @override
@@ -29,7 +31,7 @@ class _HomeState extends State<Home> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
             Container(
-              height: 200,
+              height: MediaQuery.of(context).size.height / 4,
               decoration: BoxDecoration(
                 color: Colors.black,
                 image: DecorationImage(
@@ -49,45 +51,78 @@ class _HomeState extends State<Home> {
               child: FutureBuilder(
                 future: repoController.getRepositories(),
                 builder: (context, snapshot) {
-                  if (snapshot.data == null) {
+                  if (snapshot.hasError) {
                     return Center(
-                      child: CircularProgressIndicator(
-                        backgroundColor: Colors.black,
-                      ),
+                      child: Text('Erro ao tentar carregar os repositórios'),
                     );
-                  } else {
-                    return ListView.builder(
-                      scrollDirection: Axis.vertical,
-                      itemCount: snapshot.data.length,
-                      itemBuilder: (context, index) => Container(
-                        padding: EdgeInsets.all(18),
-                        height: 100,
-                        child: Row(
-                          children: <Widget>[
-                            Container(
-                              height: 60,
-                              width: 60,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(16),
-                                ),
-                                image: DecorationImage(
-                                  image: NetworkImage(
-                                    snapshot.data[index].owner.avatarUrl,
+                  } else if (snapshot.hasData) {
+                    if (snapshot.data != null) {
+                      return ListView.separated(
+                        separatorBuilder: (context, index) => Divider(
+                          color: Colors.black12,
+                        ),
+                        scrollDirection: Axis.vertical,
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (context, index) => GestureDetector(
+                          onTap: () {
+                            launchURL(snapshot.data[index].htmlUrl);
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(18),
+                            height: 100,
+                            child: Row(
+                              children: <Widget>[
+                                Container(
+                                  height: 60,
+                                  width: 60,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(16),
+                                    ),
+                                    image: DecorationImage(
+                                      image: NetworkImage(
+                                        snapshot.data[index].owner.avatarUrl,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(snapshot.data[index].name),
-                                Text(snapshot.data[index].owner.login),
+                                Container(
+                                  padding: EdgeInsets.all(8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      Text(
+                                        snapshot.data[index].name,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                      Text(
+                                        snapshot.data[index].owner.login,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w300,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
-                            )
-                          ],
+                            ),
+                          ),
                         ),
-                      ),
+                      );
+                    } else {
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                  } else {
+                    return Center(
+                      child: Text('Erro ao tentar carregar os repositórios'),
                     );
                   }
                 },
