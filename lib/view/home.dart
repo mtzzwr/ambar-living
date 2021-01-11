@@ -1,5 +1,6 @@
 import 'package:ambar_living/controller/repo_controller.dart';
 import 'package:ambar_living/model/repo.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   RepoController repoController = RepoController();
+  Future<List<Repo>> repoFuture;
 
   launchURL(String url) async {
     if (await canLaunch(url)) {
@@ -19,6 +21,12 @@ class _HomeState extends State<Home> {
     } else {
       throw 'Não foi possível abrir $url';
     }
+  }
+
+  @override
+  void initState() {
+    repoFuture = repoController.getRepositories();
+    super.initState();
   }
 
   @override
@@ -40,7 +48,8 @@ class _HomeState extends State<Home> {
               ),
             ),
             Container(
-              height: 500,
+              height: MediaQuery.of(context).size.height / 1.5,
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -49,11 +58,25 @@ class _HomeState extends State<Home> {
                 ),
               ),
               child: FutureBuilder(
-                future: repoController.getRepositories(),
+                future: repoFuture,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Erro ao tentar carregar os repositórios'),
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Erro ao tentar carregar os repositórios'),
+                        IconButton(
+                          icon: Icon(
+                            Icons.refresh,
+                            size: 30,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              repoFuture = repoController.getRepositories();
+                            });
+                          },
+                        )
+                      ],
                     );
                   } else if (snapshot.hasData) {
                     if (snapshot.data != null) {
@@ -95,16 +118,20 @@ class _HomeState extends State<Home> {
                                     children: <Widget>[
                                       Text(
                                         snapshot.data[index].name,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
+                                        style: GoogleFonts.quicksand(
+                                          textStyle: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
                                         ),
                                       ),
                                       Text(
                                         snapshot.data[index].owner.login,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w300,
-                                          fontSize: 14,
+                                        style: GoogleFonts.quicksand(
+                                          textStyle: TextStyle(
+                                            fontWeight: FontWeight.w300,
+                                            fontSize: 14,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -122,7 +149,7 @@ class _HomeState extends State<Home> {
                     }
                   } else {
                     return Center(
-                      child: Text('Erro ao tentar carregar os repositórios'),
+                      child: CircularProgressIndicator(),
                     );
                   }
                 },

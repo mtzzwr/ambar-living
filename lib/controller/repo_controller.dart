@@ -14,7 +14,6 @@ class RepoController {
         Repo repo = Repo.fromJson(r);
         repositories.add(repo);
       }
-      print(repositories.length);
       return repositories;
     }
 
